@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sudoku</title>
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sudoku">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#1a2218">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -222,6 +228,7 @@
   }
   .num-btn:hover  { background: var(--btn-hover); border-color: var(--text-user); }
   .num-btn:active { transform: scale(0.93); }
+  .num-btn.complete { opacity: 0.25; filter: blur(1.5px); cursor: default; pointer-events: none; }
 
   /* Action buttons */
   .actions {
@@ -703,6 +710,13 @@ function render() {
 
   // notes-btn state
   document.getElementById('notes-btn').classList.toggle('active', state.notesMode);
+
+  // Blur numpad buttons for fully-placed digits
+  const counts = new Array(10).fill(0);
+  for (let i = 0; i < 81; i++) if (board[i] > 0) counts[board[i]]++;
+  document.querySelectorAll('.num-btn').forEach(btn => {
+    btn.classList.toggle('complete', counts[+btn.textContent] === 9);
+  });
 }
 
 // ─── Events ──────────────────────────────────────────────────────────────────
@@ -797,6 +811,12 @@ document.getElementById('difficulty').addEventListener('change', e => {
 // ─── Init ────────────────────────────────────────────────────────────────────
 buildGrid();
 newGame('medium');
+</script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
 </script>
 </body>
 </html>
