@@ -312,6 +312,7 @@
     <option value="hard">Hard</option>
     <option value="expert">Expert</option>
     <option value="diabolical">Diabolical</option>
+    <option value="extraspicy">🌶 Extra Spicy</option>
   </select>
 </header>
 
@@ -430,7 +431,7 @@ function countSolutions(b, limit = 2) {
   return count;
 }
 
-const TARGET_GIVENS = { easy: 46, medium: 36, hard: 28, expert: 23, diabolical: 19 };
+const TARGET_GIVENS = { easy: 46, medium: 36, hard: 28, expert: 23, diabolical: 19, extraspicy: 17 };
 
 function removeClues(sol, target) {
   const b = sol.slice();
