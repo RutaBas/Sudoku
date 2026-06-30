@@ -55,7 +55,118 @@
     align-items: center;
     justify-content: space-between;
     margin-bottom: 12px;
+    gap: 8px;
   }
+
+  .header-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  .header-actions .action-btn {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    min-width: unset;
+    flex: unset;
+  }
+
+  .bottom-controls {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    max-width: 480px;
+    margin-top: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* Difficulty picker overlay */
+  @keyframes flicker {
+    0%, 100% { opacity: 1; } 50% { opacity: 0.7; }
+  }
+  @keyframes slidein {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  #picker-overlay {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  #picker-overlay.hidden { display: none; }
+
+  .picker-box {
+    background: var(--bg);
+    border-radius: 20px;
+    padding: 32px 24px;
+    text-align: center;
+    width: min(360px, 92vw);
+    animation: slidein 0.35s ease-out;
+  }
+
+  .picker-flame {
+    font-size: 2.8rem;
+    animation: flicker 1.8s ease-in-out infinite;
+    margin-bottom: 4px;
+  }
+
+  .picker-box h2 {
+    font-size: 1.4rem;
+    color: var(--accent);
+    margin-bottom: 4px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-weight: 900;
+  }
+
+  .picker-subtitle {
+    color: var(--text-notes);
+    font-size: 0.85rem;
+    margin-bottom: 20px;
+  }
+
+  .picker-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .pick-btn {
+    background: var(--cell-bg);
+    color: var(--text-given);
+    border: 1px solid var(--border-thin);
+    border-radius: 12px;
+    padding: 13px 16px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: transform 0.12s, background 0.15s, border-color 0.15s, box-shadow 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .pick-btn:hover {
+    transform: scale(1.03);
+    border-color: var(--accent2);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  }
+  .pick-btn:active { transform: scale(0.97); }
+
+  .pick-btn[data-diff="mild"]       { --heat: #6aaa6a; }
+  .pick-btn[data-diff="seasoned"]   { --heat: #a8c84a; }
+  .pick-btn[data-diff="spicy"]      { --heat: #e8a030; }
+  .pick-btn[data-diff="fiery"]      { --heat: #e86020; }
+  .pick-btn[data-diff="diabolical"] { --heat: #e03030; }
+  .pick-btn[data-diff="extraspicy"] { --heat: #c020c0; }
+
+  .pick-btn:hover { background: color-mix(in srgb, var(--heat) 20%, var(--cell-bg)); border-color: var(--heat); }
+
+  .pick-label { font-weight: 700; }
+  .pick-clues { font-size: 0.75rem; color: var(--text-notes); }
 
   h1 {
     font-size: 1.6rem;
@@ -231,14 +342,6 @@
   .num-btn.complete { opacity: 0.25; filter: blur(1.5px); cursor: default; pointer-events: none; }
 
   /* Action buttons */
-  .actions {
-    display: flex;
-    gap: 8px;
-    width: 100%;
-    max-width: 480px;
-    flex-wrap: wrap;
-  }
-
   .action-btn {
     flex: 1;
     min-width: 100px;
@@ -304,8 +407,53 @@
 </head>
 <body>
 
+<!-- Difficulty picker shown on first open -->
+<div id="picker-overlay">
+  <div class="picker-box">
+    <div class="picker-flame">🔥</div>
+    <h2>Choose Your Heat</h2>
+    <p class="picker-subtitle">How brave are you feeling today?</p>
+    <div class="picker-options">
+      <button class="pick-btn" data-diff="mild">
+        <span class="pick-label">🫑 Mild</span>
+        <span class="pick-clues">relaxed &amp; breezy</span>
+      </button>
+      <button class="pick-btn" data-diff="seasoned">
+        <span class="pick-label">🧄 Seasoned</span>
+        <span class="pick-clues">a little kick</span>
+      </button>
+      <button class="pick-btn" data-diff="spicy">
+        <span class="pick-label">🌶️ Spicy</span>
+        <span class="pick-clues">now we're cooking</span>
+      </button>
+      <button class="pick-btn" data-diff="fiery">
+        <span class="pick-label">🔥 Fiery</span>
+        <span class="pick-clues">bring a fire extinguisher</span>
+      </button>
+      <button class="pick-btn" data-diff="diabolical">
+        <span class="pick-label">😈 Diabolical</span>
+        <span class="pick-clues">your brain will hurt</span>
+      </button>
+      <button class="pick-btn" data-diff="extraspicy">
+        <span class="pick-label">🌶️🌶️ Extra Spicy</span>
+        <span class="pick-clues">mathematically brutal</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <header>
   <h1>Sudoku</h1>
+  <div class="header-actions">
+    <button class="action-btn" id="check-btn">Check</button>
+    <button class="action-btn" id="solve-btn">Solve</button>
+    <button class="action-btn primary" id="new-btn">New Game</button>
+  </div>
+</header>
+
+<div class="controls">
+  <span class="timer" id="timer">⏱ 00:00</span>
+  <div class="spacer"></div>
   <select id="difficulty">
     <option value="mild">🫑 Mild</option>
     <option value="seasoned" selected>🧄 Seasoned</option>
@@ -314,15 +462,6 @@
     <option value="diabolical">😈 Diabolical</option>
     <option value="extraspicy">🌶️🌶️ Extra Spicy</option>
   </select>
-</header>
-
-<div class="controls">
-  <span class="timer" id="timer">⏱ 00:00</span>
-  <div class="spacer"></div>
-  <button class="ctrl-btn" id="pause-btn" title="Pause (P)">⏸ Pause</button>
-  <button class="ctrl-btn" id="notes-btn" title="Toggle notes mode (N)">✏ Notes</button>
-  <button class="ctrl-btn" id="hide-notes-btn" title="Hide/show pencil marks">👁 Notes</button>
-  <button class="ctrl-btn" id="undo-btn" title="Undo (Ctrl+Z)">↩ Undo</button>
 </div>
 
 <div class="grid-wrapper">
@@ -331,10 +470,11 @@
 
 <div class="numpad" id="numpad"></div>
 
-<div class="actions">
-  <button class="action-btn" id="check-btn">Check</button>
-  <button class="action-btn" id="solve-btn">Solve</button>
-  <button class="action-btn primary" id="new-btn">New Game</button>
+<div class="bottom-controls">
+  <button class="ctrl-btn" id="pause-btn" title="Pause (P)">⏸ Pause</button>
+  <button class="ctrl-btn" id="notes-btn" title="Toggle notes mode (N)">✏ Notes</button>
+  <button class="ctrl-btn" id="hide-notes-btn" title="Hide/show pencil marks">👁 Notes</button>
+  <button class="ctrl-btn" id="undo-btn" title="Undo (Ctrl+Z)">↩ Undo</button>
 </div>
 
 <div id="win-overlay">
@@ -801,17 +941,32 @@ document.getElementById('hide-notes-btn').addEventListener('click', () => {
 document.getElementById('undo-btn').addEventListener('click', undoMove);
 document.getElementById('check-btn').addEventListener('click', checkBoard);
 document.getElementById('solve-btn').addEventListener('click', solveBoard);
-document.getElementById('new-btn').addEventListener('click', () => newGame());
-document.getElementById('win-new-btn').addEventListener('click', () => newGame());
+document.getElementById('win-new-btn').addEventListener('click', () => {
+  document.getElementById('win-overlay').classList.remove('show');
+  document.getElementById('picker-overlay').classList.remove('hidden');
+});
 
 document.getElementById('difficulty').addEventListener('change', e => {
   state.difficulty = e.target.value;
   newGame(e.target.value);
 });
 
+// ─── Difficulty picker ───────────────────────────────────────────────────────
+document.querySelectorAll('.pick-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const diff = btn.dataset.diff;
+    document.getElementById('difficulty').value = diff;
+    document.getElementById('picker-overlay').classList.add('hidden');
+    newGame(diff);
+  });
+});
+
+document.getElementById('new-btn').addEventListener('click', () => {
+  document.getElementById('picker-overlay').classList.remove('hidden');
+});
+
 // ─── Init ────────────────────────────────────────────────────────────────────
 buildGrid();
-newGame('seasoned');
 </script>
 
 <script>

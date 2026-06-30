@@ -1,4 +1,4 @@
-const CACHE = 'sudoku-20260630';
+const CACHE = 'sudoku-20260630c';
 const ASSETS = [
   'sudoku.html',
   'manifest.json',
