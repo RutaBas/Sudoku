@@ -10,482 +10,157 @@
 <meta name="apple-mobile-web-app-title" content="Sudoku">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#1a2218">
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<link rel="stylesheet" href="ui.css">
 
-  :root {
-    --bg: #1a2218;
-    --surface: #1e2b1c;
-    --cell-bg: #243322;
-    --cell-hover: #2e4029;
-    --cell-selected: #4a7c59;
-    --cell-peer: #263524;
-    --cell-same: #3d6b3a;
-    --cell-given-bg: #1a2718;
-    --text-given: #d4e8c2;
-    --text-user: #a8d5a2;
-    --text-error: #e07b6a;
-    --text-notes: #7aab7a;
-    --accent: #c8a96e;
-    --accent2: #4a7c59;
-    --border-thin: #2e4028;
-    --border-thick: #5a7a50;
-    --btn-bg: #1e2b1c;
-    --btn-hover: #2a3d28;
-    --btn-active: #4a7c59;
-    --win-glow: #8fbe8a;
-  }
-
-  body {
-    background: var(--bg);
-    color: var(--text-given);
-    font-family: system-ui, -apple-system, sans-serif;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 16px 8px;
-    user-select: none;
-  }
-
-  header {
-    width: 100%;
-    max-width: 480px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
-    gap: 8px;
-  }
-
-  .header-actions {
-    display: flex;
-    gap: 6px;
-  }
-
-  .header-actions .action-btn {
-    padding: 6px 10px;
-    font-size: 0.8rem;
-    min-width: unset;
-    flex: unset;
-  }
-
-  .bottom-controls {
-    display: flex;
-    gap: 8px;
-    width: 100%;
-    max-width: 480px;
-    margin-top: 20px;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
-  /* Difficulty picker overlay */
-  @keyframes flicker {
-    0%, 100% { opacity: 1; } 50% { opacity: 0.7; }
-  }
-  @keyframes slidein {
-    from { opacity: 0; transform: translateY(24px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  #picker-overlay {
-    display: flex;
-    position: fixed;
-    inset: 0;
-    background: var(--bg);
-    z-index: 200;
-    align-items: center;
-    justify-content: center;
-  }
-  #picker-overlay.hidden { display: none; }
-
-  .picker-box {
-    background: var(--bg);
-    border-radius: 20px;
-    padding: 32px 24px;
-    text-align: center;
-    width: min(360px, 92vw);
-    animation: slidein 0.35s ease-out;
-  }
-
-  .picker-flame {
-    font-size: 2.8rem;
-    animation: flicker 1.8s ease-in-out infinite;
-    margin-bottom: 4px;
-  }
-
-  .picker-box h2 {
-    font-size: 1.4rem;
-    color: var(--accent);
-    margin-bottom: 4px;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    font-weight: 900;
-  }
-
-  .picker-subtitle {
-    color: var(--text-notes);
-    font-size: 0.85rem;
-    margin-bottom: 20px;
-  }
-
-  .picker-options {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .pick-btn {
-    background: var(--cell-bg);
-    color: var(--text-given);
-    border: 1px solid var(--border-thin);
-    border-radius: 12px;
-    padding: 13px 16px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: transform 0.12s, background 0.15s, border-color 0.15s, box-shadow 0.15s;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .pick-btn:hover {
-    transform: scale(1.03);
-    border-color: var(--accent2);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-  }
-  .pick-btn:active { transform: scale(0.97); }
-
-  .pick-btn[data-diff="mild"]       { --heat: #6aaa6a; }
-  .pick-btn[data-diff="seasoned"]   { --heat: #a8c84a; }
-  .pick-btn[data-diff="spicy"]      { --heat: #e8a030; }
-  .pick-btn[data-diff="fiery"]      { --heat: #e86020; }
-  .pick-btn[data-diff="diabolical"] { --heat: #e03030; }
-  .pick-btn[data-diff="extraspicy"] { --heat: #c020c0; }
-
-  .pick-btn:hover { background: color-mix(in srgb, var(--heat) 20%, var(--cell-bg)); border-color: var(--heat); }
-
-  .pick-label { font-weight: 700; }
-  .pick-clues { font-size: 0.75rem; color: var(--text-notes); }
-
-  h1 {
-    font-size: 1.6rem;
-    font-weight: 800;
-    letter-spacing: 4px;
-    color: var(--accent);
-    text-transform: uppercase;
-  }
-
-  select#difficulty {
-    background: var(--btn-bg);
-    color: var(--text-given);
-    border: 1px solid var(--border-thin);
-    border-radius: 6px;
-    padding: 6px 10px;
-    font-size: 0.9rem;
-    cursor: pointer;
-    outline: none;
-  }
-  select#difficulty:hover { border-color: var(--accent); }
-
-  .controls {
-    width: 100%;
-    max-width: 480px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 10px;
-    flex-wrap: wrap;
-  }
-
-  .timer {
-    font-size: 1.1rem;
-    font-variant-numeric: tabular-nums;
-    color: var(--text-given);
-    min-width: 60px;
-  }
-
-  .spacer { flex: 1; }
-
-  .ctrl-btn {
-    background: var(--btn-bg);
-    color: var(--text-given);
-    border: 1px solid var(--border-thin);
-    border-radius: 6px;
-    padding: 6px 12px;
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
-  }
-  .ctrl-btn:hover { background: var(--btn-hover); border-color: var(--accent2); }
-  .ctrl-btn.active { background: var(--accent2); border-color: var(--accent2); }
-
-  /* Grid */
-  .grid-wrapper {
-    width: 100%;
-    max-width: 480px;
-    aspect-ratio: 1;
-    margin-bottom: 12px;
-    position: relative;
-  }
-
-  .grid-wrapper.paused #grid {
-    filter: blur(6px);
-    pointer-events: none;
-  }
-
-  .grid-wrapper.paused::after {
-    content: 'PAUSED';
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2.5rem;
-    font-weight: 900;
-    letter-spacing: 8px;
-    color: var(--text-given);
-    opacity: 0.85;
-  }
-
-  #grid {
-    display: grid;
-    grid-template-columns: repeat(9, 1fr);
-    grid-template-rows: repeat(9, 1fr);
-    width: 100%;
-    height: 100%;
-    background: var(--border-thick);
-    border: 2px solid var(--border-thick);
-    border-radius: 4px;
-    gap: 1px;
-  }
-
-  .cell {
-    background: var(--cell-bg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    position: relative;
-    transition: background 0.1s;
-    border-right: 1px solid var(--border-thin);
-    border-bottom: 1px solid var(--border-thin);
-  }
-  .cell:hover { background: var(--cell-hover); }
-
-  .cell.box-right  { border-right: 2px solid var(--border-thick); }
-  .cell.box-bottom { border-bottom: 2px solid var(--border-thick); }
-
-  .cell.given    { background: var(--cell-given-bg); }
-  .cell.peer     { background: var(--cell-peer); }
-  .cell.same-num { background: var(--cell-same); }
-  .cell.selected { background: var(--cell-selected) !important; }
-
-  .cell .value {
-    font-size: clamp(14px, 4vmin, 26px);
-    font-weight: 700;
-    color: var(--text-given);
-    line-height: 1;
-    position: relative;
-    z-index: 1;
-  }
-  .cell.user-entry .value { color: var(--text-user); }
-  .cell.error .value      { color: var(--text-error); }
-
-  .notes-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(3, 1fr);
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    inset: 0;
-    padding: 2px;
-  }
-
-  .notes-grid span {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: clamp(8px, 1.9vmin, 13px);
-    color: var(--text-notes);
-    font-weight: 600;
-    opacity: 0;
-    transition: opacity 0.1s;
-    line-height: 1;
-  }
-  .notes-grid span.visible { opacity: 1; }
-
-  /* Number pad */
-  .numpad {
-    display: grid;
-    grid-template-columns: repeat(9, 1fr);
-    gap: 5px;
-    width: 100%;
-    max-width: 480px;
-    margin-bottom: 10px;
-  }
-
-  .num-btn {
-    background: var(--btn-bg);
-    color: var(--text-user);
-    border: 1px solid var(--border-thin);
-    border-radius: 6px;
-    padding: 10px 4px;
-    font-size: clamp(14px, 3.5vmin, 20px);
-    font-weight: 700;
-    cursor: pointer;
-    transition: background 0.15s, transform 0.1s;
-  }
-  .num-btn:hover  { background: var(--btn-hover); border-color: var(--text-user); }
-  .num-btn:active { transform: scale(0.93); }
-  .num-btn.complete { opacity: 0.25; filter: blur(1.5px); cursor: default; pointer-events: none; }
-
-  /* Action buttons */
-  .action-btn {
-    flex: 1;
-    min-width: 100px;
-    background: var(--btn-bg);
-    color: var(--text-given);
-    border: 1px solid var(--border-thin);
-    border-radius: 8px;
-    padding: 10px;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
-  }
-  .action-btn:hover { background: var(--btn-hover); border-color: var(--accent2); }
-  .action-btn.primary {
-    background: var(--accent2);
-    border-color: var(--accent2);
-    color: #fff;
-  }
-  .action-btn.primary:hover { filter: brightness(1.2); }
-
-  /* Win overlay */
-  #win-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.7);
-    z-index: 100;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 16px;
-  }
-  #win-overlay.show { display: flex; }
-
-  .win-box {
-    background: var(--surface);
-    border: 2px solid var(--win-glow);
-    border-radius: 16px;
-    padding: 36px 48px;
-    text-align: center;
-    box-shadow: 0 0 40px rgba(76,175,80,0.4);
-  }
-  .win-box h2 { font-size: 2rem; color: var(--win-glow); margin-bottom: 8px; }
-  .win-box p  { color: #aaa; font-size: 1.1rem; margin-bottom: 20px; }
-  .win-box button {
-    background: var(--win-glow);
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    padding: 12px 28px;
-    font-size: 1rem;
-    cursor: pointer;
-    font-weight: 700;
-  }
-  .win-box button:hover { filter: brightness(1.1); }
-
-  @keyframes cell-pulse {
-    0%   { background: var(--win-glow); }
-    100% { background: var(--cell-bg); }
-  }
-  .cell.win-flash { animation: cell-pulse 0.6s ease-out forwards; }
-</style>
 </head>
 <body>
-
-<!-- Difficulty picker shown on first open -->
-<div id="picker-overlay">
-  <div class="picker-box">
-    <div class="picker-flame">🔥</div>
-    <h2>Choose Your Heat</h2>
-    <p class="picker-subtitle">How brave are you feeling today?</p>
-    <div class="picker-options">
-      <button class="pick-btn" data-diff="mild">
-        <span class="pick-label">🫑 Mild</span>
-        <span class="pick-clues">relaxed &amp; breezy</span>
-      </button>
-      <button class="pick-btn" data-diff="seasoned">
-        <span class="pick-label">🧄 Seasoned</span>
-        <span class="pick-clues">a little kick</span>
-      </button>
-      <button class="pick-btn" data-diff="spicy">
-        <span class="pick-label">🌶️ Spicy</span>
-        <span class="pick-clues">now we're cooking</span>
-      </button>
-      <button class="pick-btn" data-diff="fiery">
-        <span class="pick-label">🔥 Fiery</span>
-        <span class="pick-clues">bring a fire extinguisher</span>
-      </button>
-      <button class="pick-btn" data-diff="diabolical">
-        <span class="pick-label">😈 Diabolical</span>
-        <span class="pick-clues">your brain will hurt</span>
-      </button>
-      <button class="pick-btn" data-diff="extraspicy">
-        <span class="pick-label">🌶️🌶️ Extra Spicy</span>
-        <span class="pick-clues">mathematically brutal</span>
-      </button>
-    </div>
-  </div>
+<div class="app">
+  <header><h1>SUDOKU</h1><button class="icon-button" id="settings-btn" aria-label="Settings" data-icon="settings"></button></header>
+  <main>
+    <section id="picker-overlay" aria-label="Home">
+      <div class="resume-card" id="resume-card" hidden>
+        <div class="eyebrow">PICK UP WHERE YOU LEFT OFF</div>
+        <div class="resume-meta"><span class="pepper" id="resume-pepper" aria-hidden="true"></span><strong id="resume-level"></strong><span class="timer" id="resume-time"></span></div>
+        <div class="resume-detail"><span id="resume-detail"></span><span id="resume-save-status">Saved</span></div>
+        <button class="primary-button" id="cancel-picker"><span data-icon="play" aria-hidden="true"></span><span id="resume-label">Resume game</span></button>
+      </div>
+      <div class="section-heading"><h2 id="picker-title">Choose Your Heat</h2><span class="quiet" id="picker-mode">NEW GAME</span></div>
+      <p id="picker-subtitle" hidden></p>
+      <div class="picker-options">
+        <button class="pick-btn" data-diff="mild"><span class="pepper" data-tier="mild" aria-hidden="true"></span><span class="pick-copy"><span class="pick-label">Mild</span><span class="pick-clues">Single candidates</span></span><span class="pick-arrow" aria-hidden="true">›</span></button>
+        <button class="pick-btn" data-diff="seasoned"><span class="pepper" data-tier="seasoned" aria-hidden="true"></span><span class="pick-copy"><span class="pick-label">Seasoned</span><span class="pick-clues">Hidden singles</span></span><span class="pick-arrow" aria-hidden="true">›</span></button>
+        <button class="pick-btn" data-diff="spicy"><span class="pepper" data-tier="spicy" aria-hidden="true"></span><span class="pick-copy"><span class="pick-label">Spicy</span><span class="pick-clues">Locked candidates</span></span><span class="pick-arrow" aria-hidden="true">›</span></button>
+        <button class="pick-btn" data-diff="fiery"><span class="pepper" data-tier="fiery" aria-hidden="true"></span><span class="pick-copy"><span class="pick-label">Fiery</span><span class="pick-clues">Naked pairs</span></span><span class="pick-arrow" aria-hidden="true">›</span></button>
+        <button class="pick-btn" data-diff="diabolical"><span class="pepper" data-tier="diabolical" aria-hidden="true"></span><span class="pick-copy"><span class="pick-label">Diabolical</span><span class="pick-clues">X-wings</span></span><span class="pick-arrow" aria-hidden="true">›</span></button>
+        <button class="pick-btn" data-diff="extraspicy"><span class="pepper" data-tier="extraspicy" aria-hidden="true"></span><span class="pick-copy"><span class="pick-label">Extra Spicy</span><span class="pick-clues">Beyond guided techniques</span></span><span class="pick-arrow" aria-hidden="true">›</span></button>
+      </div>
+      <button class="daily-button" id="home-daily-btn"><span data-icon="calendar" aria-hidden="true"></span><span class="daily-copy"><strong>Daily puzzle</strong><small id="daily-status"></small></span><span aria-hidden="true">→</span></button>
+      <button class="back-button" id="practice-btn" hidden>← Back to practice puzzles</button>
+      <div class="footer"><button id="home-stats-btn"><span data-icon="trophy" aria-hidden="true"></span>Best times</button><button id="home-settings-btn"><span data-icon="settings" aria-hidden="true"></span>Settings</button></div>
+    </section>
+    <section id="game-screen" hidden aria-label="Sudoku game">
+      <div class="controls"><div class="timer-group"><span class="timer" id="timer">⏱ 00:00</span><button class="icon-button" id="pause-btn" aria-label="Pause game (P)">⏸</button></div><div class="difficulty-control"><span class="pepper" id="game-pepper" aria-hidden="true"></span><select id="difficulty" aria-label="Difficulty"><option value="mild">Mild</option><option value="seasoned" selected>Seasoned</option><option value="spicy">Spicy</option><option value="fiery">Fiery</option><option value="diabolical">Diabolical</option><option value="extraspicy">Extra Spicy</option></select></div></div>
+      <div class="context-line"><p id="game-label"></p><span id="save-status" role="status"></span></div>
+      <p id="save-error" role="status" hidden></p>
+      <div class="grid-wrapper"><div id="grid" aria-label="Sudoku board"></div></div>
+      <div class="toolbar"><button id="erase-btn" title="Erase (Delete)"><span data-icon="erase" aria-hidden="true"></span>Erase</button><button id="notes-btn" title="Pencil mode (N)"><span data-icon="pencil" aria-hidden="true"></span>Pencil</button><button id="undo-btn" title="Undo (Ctrl+Z)"><span data-icon="undo" aria-hidden="true"></span>Undo</button><button id="hint-btn"><span data-icon="hint" aria-hidden="true"></span>Hint</button></div>
+      <section id="hint-card" hidden aria-label="Logical hint"><div class="hint-heading"><span id="hint-title"></span><button class="icon-button" id="dismiss-hint-btn" aria-label="Dismiss hint">×</button></div><p id="hint-text" aria-live="polite"></p><button id="apply-hint-btn" hidden>Apply this hint</button></section>
+      <p id="feedback" role="status" aria-live="polite"></p>
+      <div class="numpad" id="numpad" aria-label="Number pad"></div>
+      <div class="secondary-tools"><button id="hide-notes-btn">Hide candidates</button><button id="check-btn"><span data-icon="check" aria-hidden="true"></span>Check</button></div>
+      <div class="footer"><button id="new-btn"><span data-icon="home" aria-hidden="true"></span>Home</button><button id="daily-btn">Daily puzzle</button><button id="stats-btn">Best times</button></div>
+    </section>
+    <section id="settings-screen" hidden aria-label="Settings"><button class="back-button" id="settings-back-btn">← Back</button><h2 class="page-heading">Settings</h2><label class="setting-row">Candidates<select id="notes-setting"><option value="auto">Automatic</option><option value="manual">Manual</option></select></label><button id="solve-btn" style="margin-top:16px">Reveal solution</button><p class="setting-note">Hints and checks mark a game as assisted. Revealed solutions do not count as wins. Daily results count once per date and difficulty.</p></section>
+    <section id="stats-screen" hidden aria-label="Best times"><button class="back-button" id="stats-back-btn">← Back</button><h2 class="page-heading">Best times</h2><p id="stats-content"></p><p class="setting-note">Best times are for games finished without hints or checks.</p></section>
+  </main>
 </div>
+<div id="win-overlay" role="dialog" aria-modal="true" aria-labelledby="win-heading"><div class="win-box"><span class="pepper" id="win-pepper" aria-hidden="true"></span><h2 id="win-heading">Solved!</h2><p id="win-time"></p><button class="primary-button" id="win-new-btn">Play again</button><button id="close-win">View board</button></div></div>
 
-<header>
-  <h1>Sudoku</h1>
-  <div class="header-actions">
-    <button class="action-btn" id="check-btn">Check</button>
-    <button class="action-btn" id="solve-btn">Solve</button>
-    <button class="action-btn primary" id="new-btn">New Game</button>
-  </div>
-</header>
-
-<div class="controls">
-  <span class="timer" id="timer">⏱ 00:00</span>
-  <div class="spacer"></div>
-  <select id="difficulty">
-    <option value="mild">🫑 Mild</option>
-    <option value="seasoned" selected>🧄 Seasoned</option>
-    <option value="spicy">🌶️ Spicy</option>
-    <option value="fiery">🔥 Fiery</option>
-    <option value="diabolical">😈 Diabolical</option>
-    <option value="extraspicy">🌶️🌶️ Extra Spicy</option>
-  </select>
-</div>
-
-<div class="grid-wrapper">
-  <div id="grid"></div>
-</div>
-
-<div class="numpad" id="numpad"></div>
-
-<div class="bottom-controls">
-  <button class="ctrl-btn" id="pause-btn" title="Pause (P)">⏸ Pause</button>
-  <button class="ctrl-btn" id="notes-btn" title="Toggle notes mode (N)">✏ Notes</button>
-  <button class="ctrl-btn" id="hide-notes-btn" title="Hide/show pencil marks">👁 Notes</button>
-  <button class="ctrl-btn" id="undo-btn" title="Undo (Ctrl+Z)">↩ Undo</button>
-</div>
-
-<div id="win-overlay">
-  <div class="win-box">
-    <h2>Solved!</h2>
-    <p id="win-time"></p>
-    <button id="win-new-btn">New Game</button>
-  </div>
-</div>
 
 <script>
+// Shared by puzzle grading and the in-game teaching hints.
+const SudokuLogic = (() => {
+  const units = [];
+  for (let r=0;r<9;r++) units.push(Array.from({length:9},(_,c)=>r*9+c));
+  for (let c=0;c<9;c++) units.push(Array.from({length:9},(_,r)=>r*9+c));
+  for (let b=0;b<9;b++) units.push(Array.from({length:9},(_,k)=>(Math.floor(b/3)*3+Math.floor(k/3))*9+(b%3)*3+k%3));
+  const peers = Array.from({length:81},(_,i)=>[...new Set(units.filter(u=>u.includes(i)).flat())].filter(j=>j!==i));
+  const candidates = b => b.map((v,i)=>v?[]:Array.from({length:9},(_,k)=>k+1).filter(d=>!peers[i].some(j=>b[j]===d)));
+  const cell = i => `row ${Math.floor(i/9)+1}, column ${i%9+1}`;
+  const unitName = n => n<9?`row ${n+1}`:n<18?`column ${n-8}`:`box ${n-17}`;
+  function step(b, c) {
+    for(let i=0;i<81;i++) if(!b[i] && c[i].length===1) return {rank:0, technique:'Single candidate', place:[i,c[i][0]], cells:[i,...peers[i]], text:`Only ${c[i][0]} can go in ${cell(i)}: every other digit is ruled out by its row, column, or box.`};
+    for(let u=0;u<27;u++) for(let d=1;d<=9;d++) {
+      const spots=units[u].filter(i=>!b[i]&&c[i].includes(d));
+      if(spots.length===1) return {rank:1,technique:'Hidden single',place:[spots[0],d],cells:units[u],text:`In ${unitName(u)}, ${d} has only one possible home: ${cell(spots[0])}.`};
+    }
+    for(let u=0;u<27;u++) for(let d=1;d<=9;d++) {
+      const spots=units[u].filter(i=>c[i].includes(d));
+      if(spots.length<2) continue;
+      for(let v=0;v<27;v++) {
+        if(u===v || !spots.every(i=>units[v].includes(i))) continue;
+        const remove=units[v].filter(i=>!units[u].includes(i)&&c[i].includes(d)).map(i=>[i,d]);
+        if(remove.length) return {rank:2,technique:'Locked candidates',remove,cells:[...new Set([...spots,...remove.map(x=>x[0])])],text:`In ${unitName(u)}, every possible ${d} is also in ${unitName(v)}. Remove ${d} from the other cells of ${unitName(v)}.`};
+      }
+    }
+    for(let u=0;u<27;u++) for(const i of units[u]) {
+      if(c[i].length!==2) continue;
+      const pair=units[u].filter(j=>c[j].length===2&&c[j].join()===c[i].join());
+      if(pair.length!==2) continue;
+      const remove=units[u].filter(j=>!pair.includes(j)).flatMap(j=>c[i].filter(d=>c[j].includes(d)).map(d=>[j,d]));
+      if(remove.length) return {rank:3,technique:'Naked pair',remove,cells:[...pair,...new Set(remove.map(x=>x[0]))],text:`The two highlighted cells in ${unitName(u)} can only contain ${c[i].join(' and ')}. Reserve those digits for the pair and remove them from the other cells in that unit.`};
+    }
+    for(let axis=0;axis<2;axis++) for(let d=1;d<=9;d++) for(let a=0;a<8;a++) for(let z=a+1;z<9;z++) {
+      const ua=units[axis*9+a].filter(i=>c[i].includes(d)), uz=units[axis*9+z].filter(i=>c[i].includes(d));
+      const cross=i=>axis?Math.floor(i/9):i%9;
+      if(ua.length!==2||uz.length!==2||ua.map(cross).join()!==uz.map(cross).join()) continue;
+      const corners=[...ua,...uz], remove=[];
+      for(const n of ua.map(cross)) for(const i of units[(1-axis)*9+n]) if(!corners.includes(i)&&c[i].includes(d)) remove.push([i,d]);
+      if(remove.length) return {rank:4,technique:'X-wing',remove,cells:[...corners,...new Set(remove.map(x=>x[0]))],text:`The ${d} candidates in ${axis?'columns':'rows'} ${a+1} and ${z+1} share the same two ${axis?'rows':'columns'}. One ${d} must occupy each crossing, so remove ${d} from the other highlighted cells.`};
+    }
+    return null;
+  }
+  function apply(b,c,s) {
+    if(s.place) { const [i,d]=s.place; b[i]=d;c[i]=[];for(const j of peers[i]) c[j]=c[j].filter(n=>n!==d); }
+    else for(const [i,d] of s.remove) c[i]=c[i].filter(n=>n!==d);
+  }
+  function grade(input) {
+    const b=[...input], c=candidates(b);let rank=0,steps=0;
+    while(b.includes(0)) { const s=step(b,c); if(!s) return {rank:5,steps};rank=Math.max(rank,s.rank);apply(b,c,s);steps++; }
+    return {rank,steps};
+  }
+  function solve(input,limit=2) {
+    const b=[...input], out=[];
+    function visit() {
+      let idx=-1, opts=[];
+      for(let i=0;i<81;i++) if(!b[i]) {
+        const a=[];for(let d=1;d<=9;d++) if(!peers[i].some(j=>b[j]===d)) a.push(d);
+        if(!a.length) return;
+        if(idx<0||a.length<opts.length) {idx=i;opts=a;if(a.length===1) break;}
+      }
+      if(idx<0) {out.push([...b]);return;}
+      for(const d of opts) {b[idx]=d;visit();b[idx]=0;if(out.length>=limit)return;}
+    }
+    visit();return out;
+  }
+  return {units,peers,candidates,step,apply,grade,solve};
+})();
+if (typeof module !== 'undefined') module.exports = SudokuLogic;
+
+// Uniquely solvable seeds, classified by the shared logical solver.
+const SUDOKU_BANK = [
+  [
+    "008050492200786530035042000080509647046810050002467100863090704027608910019000300",
+    "008050492200786530035042000080509647046810050002467100863090704027608910010000300",
+    "008050492000786530035042000080509647046810050002467100863090704027608910010000300"
+  ],
+  [
+    "008000402000706030030042000080009607046010050002467100860090004027608910000000000",
+    "008000402000706030030042000000009607046010050002467100860090004027608910000000000",
+    "008000402000706030030042000000009607046010050002467100860090004027608010000000000"
+  ],
+  [
+    "300050000000004100081060930000016003702000000000000405200001680000007009000300040",
+    "300050000000004100081060930000016003702000000000000405200001600000007009000300040",
+    "970080050003900006002053009000008060298365000005000002000500007034009025000004010"
+  ],
+  [
+    "000050090060400000000000708008000052000180004003002000800300005070690400009000000",
+    "200000000057800060000010375402001097060000420000004000090008000005097010820500700",
+    "000000000000310008478000005007000300800040000009000027024106800000004000150700000"
+  ],
+  [
+    "000068005020530190000001000090000240800000500000005006503000000700400351006000008",
+    "100050020049007000670010000000000500003026108007300002000040800000009050005600003",
+    "000002105001000000800000470040000002709001506008000000052640003080000690400000000"
+  ],
+  [
+    "008000402000706030030040000000009607040000050002467100860090004027608010000000000",
+    "008000002000706030030040000000009607040000050002467100860090004027608010000000000",
+    "020018047000900080600070020403000050806401279009800403500000700032080100064003000"
+  ]
+];
+
 // ─── Data ───────────────────────────────────────────────────────────────────
 let puzzle   = new Int8Array(81);
 let solution = new Int8Array(81);
@@ -498,12 +173,14 @@ const state = {
   notesMode: false,
   hideNotes: false,
   paused: false,
-  difficulty: 'medium',
+  difficulty: 'seasoned',
   timerSeconds: 0,
   timerInterval: null,
   solved: false,
+  autoNotes: true, assisted: false, recorded: false, dailyDate: null, gameId: null,
 };
 
+let gameStarted = false;
 const history = [];
 const cellElements = [];
 
@@ -587,6 +264,73 @@ function removeClues(sol, target) {
   return b;
 }
 
+// ─── Saved game ──────────────────────────────────────────────────────────────
+const SAVE_KEY = 'forest-sudoku-game-v1';
+function saveGame() {
+  if (!gameStarted) return;
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      autoNotes: state.autoNotes, assisted: state.assisted, recorded: state.recorded, dailyDate: state.dailyDate, gameId: state.gameId,
+      version: 1, puzzle: [...puzzle], solution: [...solution], board: [...board],
+      notes: notes.map(s => [...s]),
+      history: history.map(h => ({ ...h, prevNotesCopy: h.prevNotesCopy.map(s => [...s]) })),
+      selected: state.selected, notesMode: state.notesMode, hideNotes: state.hideNotes,
+      paused: state.paused, difficulty: state.difficulty,
+      timerSeconds: state.timerSeconds, solved: state.solved,
+    }));
+    canSave=true;
+    document.getElementById('save-status').textContent = '✓ Saved';
+    document.getElementById('save-error').hidden=true;
+  } catch {
+    canSave=false;
+    document.getElementById('save-status').textContent = 'Not saved';
+    document.getElementById('save-error').hidden=false;
+    document.getElementById('save-error').textContent='Progress could not be saved. Keep this page open to continue playing.';
+  }
+}
+
+function restoreGame() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return false;
+    const saved = JSON.parse(raw);
+    const digits = (a, min = 0) => Array.isArray(a) && a.length === 81 && a.every(n => Number.isInteger(n) && n >= min && n <= 9);
+    const noteSets = a => Array.isArray(a) && a.length === 81 && a.every(s => Array.isArray(s) && s.every(n => Number.isInteger(n) && n >= 1 && n <= 9));
+    if (saved.version !== 1 || !digits(saved.puzzle) || !digits(saved.solution, 1) || !digits(saved.board) || !noteSets(saved.notes) ||
+        !Object.hasOwn(TARGET_GIVENS, saved.difficulty) || !Number.isSafeInteger(saved.timerSeconds) || saved.timerSeconds < 0 ||
+        !Number.isInteger(saved.selected) || saved.selected < -1 || saved.selected > 80 ||
+        !['paused', 'solved', 'notesMode', 'hideNotes'].every(k => typeof saved[k] === 'boolean') ||
+        !saved.solution.every((n, i) => isValid(saved.solution, i, n)) ||
+        !saved.puzzle.every((n, i) => !n || (n === saved.solution[i] && n === saved.board[i])) ||
+        saved.solved !== saved.board.every((n, i) => n === saved.solution[i]) ||
+        !Array.isArray(saved.history) || !saved.history.every(h => Number.isInteger(h.idx) && h.idx >= 0 && h.idx < 81 && !saved.puzzle[h.idx] && Number.isInteger(h.prevValue) && h.prevValue >= 0 && h.prevValue <= 9 && noteSets(h.prevNotesCopy))) return false;
+    puzzle.set(saved.puzzle);
+    solution.set(saved.solution);
+    board.set(saved.board);
+    notes = saved.notes.map(s => new Set(s));
+    for (let i = 0; i < 81; i++) givens[i] = puzzle[i] ? 1 : 0;
+    history.splice(0, history.length, ...saved.history.map(h => ({ ...h, prevNotesCopy: h.prevNotesCopy.map(s => new Set(s)) })));
+    for (const key of ['selected', 'notesMode', 'hideNotes', 'paused', 'difficulty', 'timerSeconds', 'solved']) state[key] = saved[key];
+    state.rating = SudokuLogic.grade([...puzzle]).rank;
+    state.autoNotes = saved.autoNotes !== false;
+    state.assisted = saved.assisted === true;
+    state.recorded = saved.recorded === true;
+    state.dailyDate = typeof saved.dailyDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(saved.dailyDate) ? saved.dailyDate : null;
+    state.gameId = typeof saved.gameId === 'string' ? saved.gameId : String(Date.now());
+    gameStarted = true;
+    document.getElementById('difficulty').value = state.difficulty;
+    document.getElementById('picker-overlay').classList.add('hidden');
+    document.getElementById('pause-btn').textContent = state.paused ? '▶ Resume' : '⏸ Pause';
+    document.getElementById('pause-btn').classList.toggle('active', state.paused);
+    document.getElementById('hide-notes-btn').classList.toggle('active', state.hideNotes);
+    document.querySelector('.grid-wrapper').classList.toggle('paused', state.paused);
+    document.getElementById('timer').textContent = '⏱ ' + formatTime(state.timerSeconds);
+    render();
+    if (!state.paused && !state.solved) startTimer();
+    return true;
+  } catch { return false; }
+}
+
 // ─── Smart Notes ─────────────────────────────────────────────────────────────
 function initNotes() {
   for (let i = 0; i < 81; i++) {
@@ -605,21 +349,32 @@ function shrinkNotesForPlacement(idx, digit) {
 
 // ─── Game actions ────────────────────────────────────────────────────────────
 function placeDigit(idx, digit) {
+  if (screen!=='game') return;
   if (givens[idx]) return;
   if (state.solved) return;
   if (state.paused) return;
+
+  if (!gameStarted || idx < 0 || idx > 80 || board[idx] === digit) return;
+  resetHint();tell('');
 
   // snapshot for undo
   const prevNotesCopy = notes.map(s => new Set(s));
   const prevValue = board[idx];
   history.push({ idx, prevValue, prevNotesCopy });
 
+  board[idx] = digit;
+  // Restore the old candidate only where the updated board permits it.
+  // Keep unrelated player pencil-mark eliminations intact.
+  if (state.autoNotes && prevValue !== 0) {
+    for (const peer of PEERS[idx]) {
+      if (board[peer] === 0 && isValid(board, peer, prevValue)) notes[peer].add(prevValue);
+    }
+  }
   if (digit === 0) {
-    board[idx] = 0;
     // Restore notes based on current board peers
     const used = new Set(PEERS[idx].map(p => board[p]).filter(v => v > 0));
     notes[idx] = new Set();
-    for (let d = 1; d <= 9; d++) if (!used.has(d)) notes[idx].add(d);
+    if (state.autoNotes) for (let d = 1; d <= 9; d++) if (!used.has(d)) notes[idx].add(d);
   } else {
     board[idx] = digit;
     shrinkNotesForPlacement(idx, digit);
@@ -630,6 +385,7 @@ function placeDigit(idx, digit) {
 }
 
 function toggleNote(idx, digit) {
+  if(screen!=='game')return;
   if (givens[idx]) return;
   if (board[idx] !== 0) return;
   if (state.solved) return;
@@ -645,7 +401,9 @@ function toggleNote(idx, digit) {
 }
 
 function undoMove() {
-  if (!history.length) return;
+  if(screen!=='game')return;
+  if (!history.length || state.paused || state.solved) return;
+  resetHint();tell('');
   const { idx, prevValue, prevNotesCopy } = history.pop();
   board[idx] = prevValue;
   notes.forEach((_, i) => { notes[i] = prevNotesCopy[i]; });
@@ -653,24 +411,18 @@ function undoMove() {
 }
 
 function checkBoard() {
-  let anyWrong = false;
-  for (let i = 0; i < 81; i++) {
-    if (board[i] !== 0 && !givens[i] && board[i] !== solution[i]) {
-      cellElements[i].classList.add('error');
-      anyWrong = true;
-    } else {
-      cellElements[i].classList.remove('error');
-    }
-  }
-  if (!anyWrong && board.every(v => v !== 0)) checkWin();
-}
-
-function solveBoard() {
-  board.set(solution);
-  notes.forEach(s => s.clear());
-  stopTimer();
-  state.solved = true;
+  if(screen!=='game'||!gameStarted||state.paused||state.solved) return;
+  state.assisted=true;checkedErrors.clear();resetHint();
+  for(let i=0;i<81;i++) if(board[i]&&!givens[i]&&board[i]!==solution[i]) checkedErrors.set(i,board[i]);
+  tell(checkedErrors.size ? checkedErrors.size+' incorrect '+(checkedErrors.size===1?'entry is':'entries are')+' marked. Correct or erase them to clear the highlights.' : 'All entered numbers are correct so far.');
   render();
+}
+function solveBoard() {
+  if(!gameStarted||state.solved||!confirm('Reveal the entire solution? This ends the puzzle and will not count as a win.')) return;
+  resetHint();checkedErrors.clear();state.assisted=true;state.recorded=true;
+  board.set(solution);notes.forEach(s=>s.clear());stopTimer();state.solved=true;
+  state.paused=false;document.querySelector('.grid-wrapper').classList.remove('paused');
+  showScreen('game');tell('Solution revealed. Use Home to choose a new puzzle.');render();
 }
 
 function checkWin() {
@@ -678,29 +430,39 @@ function checkWin() {
   if (board.every((v, i) => v === solution[i])) {
     stopTimer();
     state.solved = true;
+    recordWin();
     animateWin();
   }
 }
 
 function animateWin() {
+  const wonGameId = state.gameId;
   // flash cells in sequence
   const order = [...Array(81).keys()];
   order.forEach((i, seq) => {
     setTimeout(() => {
-      cellElements[i].classList.add('win-flash');
+      if (state.gameId === wonGameId && state.solved) cellElements[i].classList.add('win-flash');
     }, seq * 8);
   });
   setTimeout(() => {
+    if (state.gameId !== wonGameId || !state.solved || screen!=='game') return;
     document.getElementById('win-time').textContent =
-      `Time: ${formatTime(state.timerSeconds)}`;
+      `Time: ${formatTime(state.timerSeconds)} · ${state.assisted ? 'Assisted' : 'Without hints or checks'}`;
     document.getElementById('win-overlay').classList.add('show');
+    document.getElementById('win-new-btn').focus();
   }, 81 * 8 + 200);
 }
 
 // ─── New game ────────────────────────────────────────────────────────────────
-function newGame(diff) {
+function newGame(diff, dailyDate = null) {
   diff = diff || state.difficulty;
+  gameStarted = true;
   state.difficulty = diff;
+  state.rating=LEVELS.indexOf(diff);
+  state.dailyDate=dailyDate;state.gameId=String(Date.now())+'-'+Math.random();
+  state.assisted=Boolean(dailyDate&&stats['daily:'+dailyDate+':'+diff]);state.recorded=false;
+  resetHint();checkedErrors.clear();tell('');
+  document.getElementById('picker-overlay').classList.add('hidden');
   state.selected = -1;
   state.notesMode = false;
   state.solved = false;
@@ -708,6 +470,7 @@ function newGame(diff) {
 
   stopTimer();
   state.timerSeconds = 0;
+  document.getElementById('timer').textContent = '⏱ 00:00';
   state.paused = false;
   state.hideNotes = false;
   document.getElementById('pause-btn').textContent = '⏸ Pause';
@@ -719,24 +482,24 @@ function newGame(diff) {
   // Remove any lingering animations
   cellElements.forEach(c => c.classList.remove('win-flash', 'error'));
 
-  solution.fill(0);
-  generateSolution(solution);
-
-  const puzzleArr = removeClues(solution, TARGET_GIVENS[diff]);
+  const puzzleArr = ratedPuzzle(diff,dailyDate);
+  solution.set(SudokuLogic.solve(puzzleArr,1)[0]);
   puzzle.set(puzzleArr);
+
   board.set(puzzle);
   givens.fill(0);
   for (let i = 0; i < 81; i++) if (puzzle[i] !== 0) givens[i] = 1;
 
-  initNotes();
+  if(state.autoNotes) initNotes();else notes=Array.from({length:81},()=>new Set());
   document.getElementById('notes-btn').classList.remove('active');
   render();
-  startTimer();
+  showScreen('game',false);
 }
 
 // ─── Pause ───────────────────────────────────────────────────────────────────
 function togglePause() {
-  if (state.solved) return;
+  if (screen!=='game'||!gameStarted || state.solved) return;
+  resetHint();
   state.paused = !state.paused;
   const btn = document.getElementById('pause-btn');
   const wrapper = document.querySelector('.grid-wrapper');
@@ -751,15 +514,17 @@ function togglePause() {
     btn.classList.remove('active');
     wrapper.classList.remove('paused');
   }
+  render();
 }
 
 // ─── Timer ───────────────────────────────────────────────────────────────────
 function startTimer() {
   stopTimer();
   state.timerInterval = setInterval(() => {
-    if (!state.solved) {
+    if (screen==='game' && !state.paused && !state.solved && !document.hidden) {
       state.timerSeconds++;
       document.getElementById('timer').textContent = '⏱ ' + formatTime(state.timerSeconds);
+      saveGame();
     }
   }, 1000);
 }
@@ -783,6 +548,8 @@ function buildGrid() {
     const row = Math.floor(i / 9), col = i % 9;
     const cell = document.createElement('div');
     cell.className = 'cell';
+    cell.setAttribute('role','button');
+    cell.addEventListener('focus',()=>onCellClick(i));
     cell.dataset.index = i;
     if (col === 2 || col === 5) cell.classList.add('box-right');
     if (row === 2 || row === 5) cell.classList.add('box-bottom');
@@ -858,16 +625,21 @@ function render() {
   document.querySelectorAll('.num-btn').forEach(btn => {
     btn.classList.toggle('complete', counts[+btn.textContent] === 9);
   });
+  document.getElementById('erase-btn').disabled = !gameStarted || state.paused || state.solved || sel === -1 || !!givens[sel] || board[sel] === 0;
+  updateExtras();
+  saveGame();
 }
 
 // ─── Events ──────────────────────────────────────────────────────────────────
 function onCellClick(idx) {
-  if (state.paused) return;
+  if (screen!=='game'||state.paused) return;
   state.selected = idx;
   render();
 }
 
 document.addEventListener('keydown', e => {
+  if (screen!=='game' || document.getElementById('win-overlay').classList.contains('show') || !gameStarted || !document.getElementById('picker-overlay').classList.contains('hidden') || ['SELECT','INPUT','TEXTAREA'].includes(e.target.tagName)) return;
+  if (e.key === 'Escape') {resetHint();render();return;}
   if (e.key === 'p' || e.key === 'P') { togglePause(); return; }
 
   if (state.paused) return;
@@ -875,11 +647,12 @@ document.addEventListener('keydown', e => {
   if (e.key === 'n' || e.key === 'N') {
     state.notesMode = !state.notesMode;
     document.getElementById('notes-btn').classList.toggle('active', state.notesMode);
+    saveGame();
     return;
   }
 
   if ((e.key === 'z' && (e.ctrlKey || e.metaKey)) || e.key === 'z') {
-    undoMove(); return;
+    e.preventDefault();undoMove(); return;
   }
 
   const idx = state.selected;
@@ -894,6 +667,7 @@ document.addEventListener('keydown', e => {
     if (e.key === 'ArrowLeft')  nc = Math.max(0, col - 1);
     if (e.key === 'ArrowRight') nc = Math.min(8, col + 1);
     state.selected = nr * 9 + nc;
+    cellElements[state.selected].focus();
     render();
     return;
   }
@@ -901,7 +675,7 @@ document.addEventListener('keydown', e => {
   if (idx === -1) return;
 
   if (e.key === 'Backspace' || e.key === 'Delete' || e.key === '0') {
-    placeDigit(idx, 0); return;
+    e.preventDefault();placeDigit(idx, 0); return;
   }
 
   const d = parseInt(e.key);
@@ -925,11 +699,16 @@ for (let d = 1; d <= 9; d++) {
   numpad.appendChild(btn);
 }
 
+document.getElementById('erase-btn').addEventListener('click', () => {
+  if (state.selected !== -1) placeDigit(state.selected, 0);
+});
+
 document.getElementById('pause-btn').addEventListener('click', togglePause);
 
 document.getElementById('notes-btn').addEventListener('click', () => {
   state.notesMode = !state.notesMode;
   document.getElementById('notes-btn').classList.toggle('active', state.notesMode);
+  saveGame();
 });
 
 document.getElementById('hide-notes-btn').addEventListener('click', () => {
@@ -942,31 +721,241 @@ document.getElementById('undo-btn').addEventListener('click', undoMove);
 document.getElementById('check-btn').addEventListener('click', checkBoard);
 document.getElementById('solve-btn').addEventListener('click', solveBoard);
 document.getElementById('win-new-btn').addEventListener('click', () => {
-  document.getElementById('win-overlay').classList.remove('show');
-  document.getElementById('picker-overlay').classList.remove('hidden');
+  document.getElementById('win-overlay').classList.remove('show');openPicker();
 });
-
-document.getElementById('difficulty').addEventListener('change', e => {
-  state.difficulty = e.target.value;
-  newGame(e.target.value);
-});
-
-// ─── Difficulty picker ───────────────────────────────────────────────────────
+document.getElementById('difficulty').addEventListener('change', e => requestGame(e.target.value));
 document.querySelectorAll('.pick-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const diff = btn.dataset.diff;
-    document.getElementById('difficulty').value = diff;
-    document.getElementById('picker-overlay').classList.add('hidden');
-    newGame(diff);
-  });
+  btn.addEventListener('click', () => requestGame(btn.dataset.diff,pickerMode==='daily'?localDate():null));
+});
+document.getElementById('new-btn').addEventListener('click', () => openPicker());
+
+const LEVELS = ['mild','seasoned','spicy','fiery','diabolical','extraspicy'];
+const TECHNIQUES = ['Single candidates','Hidden singles','Locked candidates','Naked pairs','X-wings','Beyond the guided techniques'];
+const LABELS = ['Mild','Seasoned','Spicy','Fiery','Diabolical','Extra Spicy'];
+let pendingHint = null;
+let hintCells = new Set();
+let checkedErrors = new Map();
+let pickerMode = 'free';
+let stats = {};
+try { const data = JSON.parse(localStorage.getItem('forest-sudoku-stats-v1')); if(data && typeof data==='object' && !Array.isArray(data)) stats=data; } catch {}
+function tell(message) { document.getElementById('feedback').textContent = message; }
+function resetHint() { pendingHint=null;hintCells.clear();document.getElementById('apply-hint-btn').hidden=true;document.getElementById('hint-card').hidden=true; }
+function localDate() { const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function seededRandom(text) {
+  let seed=2166136261;for(const ch of text) seed=Math.imul(seed^ch.charCodeAt(0),16777619)>>>0;
+  return ()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
+}
+function ratedPuzzle(diff,date) {
+  const rank=LEVELS.indexOf(diff), random=date?seededRandom('v1:'+date+':'+diff):Math.random;
+  const shuffleLocal=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+  const pool=SUDOKU_BANK[rank], original=[...pool[Math.floor(random()*pool.length)]].map(Number);
+  for(let attempt=0;attempt<24;attempt++) {
+    const rows=shuffleLocal([0,1,2]).flatMap(b=>shuffleLocal([0,1,2]).map(n=>b*3+n));
+    const cols=shuffleLocal([0,1,2]).flatMap(b=>shuffleLocal([0,1,2]).map(n=>b*3+n));
+    const digits=[0,...shuffleLocal([1,2,3,4,5,6,7,8,9])], transpose=random()<0.5;
+    const transformed=rows.flatMap(r=>cols.map(c=>digits[original[transpose?c*9+r:r*9+c]]));
+    if(SudokuLogic.grade(transformed).rank===rank) return transformed;
+  }
+  return original;
+}
+function requestGame(diff,date=null) {
+  if(!LEVELS.includes(diff))return false;
+  if(date&&gameStarted&&!state.solved&&state.dailyDate===date&&state.difficulty===diff){resumeGame();return true;}
+  if(gameStarted&&!state.solved&&!confirm('Start a new puzzle? Your current saved game will be replaced.')) {
+    document.getElementById('difficulty').value=state.difficulty;return false;
+  }
+  document.getElementById('picker-overlay').classList.add('hidden');
+  document.getElementById('difficulty').value=diff;
+  newGame(diff,date);return true;
+}
+function openPicker(mode='free') {
+  pickerMode=mode;resetHint();tell('');
+  document.getElementById('win-overlay').classList.remove('show');
+  document.getElementById('picker-title').textContent=mode==='daily'?'Your Daily Heat':'Choose Your Heat';
+  document.getElementById('picker-subtitle').textContent=mode==='daily'?'The same puzzle for everyone at each heat level.':'';
+  document.getElementById('picker-subtitle').hidden=mode!=='daily';
+  saveGame();showScreen('home');
+}
+
+function showHint() {
+  if(screen!=='game'||!gameStarted||state.solved||state.paused) return;
+  resetHint();
+  const wrong=[...board].findIndex((v,i)=>v&&v!==solution[i]);
+  state.assisted=true;
+  if(wrong!==-1) {
+    checkedErrors.set(wrong,board[wrong]);state.selected=wrong;
+    tell(`First revisit row ${Math.floor(wrong/9)+1}, column ${wrong%9+1}. That entry does not match the solution.`);render();return;
+  }
+  // Derive candidates from the board, never from potentially mistaken pencil marks.
+  const b=[...board], c=SudokuLogic.candidates(b), chain=[];
+  for(let n=0;n<200;n++) {
+    const step=SudokuLogic.step(b,c);
+    if(!step) break;
+    chain.push(step);
+    if(step.place) {
+      pendingHint={step,chain};hintCells=new Set(chain.flatMap(s=>s.cells));
+      state.selected=step.place[0];
+      tell('');
+      document.getElementById('apply-hint-btn').hidden=false;render();return;
+    }
+    SudokuLogic.apply(b,c,step);
+  }
+  tell('This position needs logic beyond the guided techniques. Try another area, or use Reveal solution in Settings.');render();
+}
+function applyHint() {
+  if(!pendingHint||state.paused||state.solved) return;
+  const [i,d]=pendingHint.step.place;placeDigit(i,d);tell('Hint applied. Keep going!');
+}
+function recordWin() {
+  if(state.recorded) return;
+  state.recorded=true;
+  const key=state.dailyDate?'daily:'+state.dailyDate+':'+state.difficulty:'game:'+state.gameId;
+  if(stats[key]) return;
+  stats[key]={difficulty:state.difficulty,seconds:state.timerSeconds,assisted:state.assisted,date:state.dailyDate};
+  try {localStorage.setItem('forest-sudoku-stats-v1',JSON.stringify(stats));} catch {tell('Puzzle solved! Your statistics could not be saved on this device.');}
+  updateStats();
+}
+function updateStats() {
+  const valid=Object.values(stats).filter(s=>s&&LEVELS.includes(s.difficulty)&&Number.isFinite(s.seconds)&&s.seconds>=0);
+  document.getElementById('stats-content').textContent=LEVELS.map((level,i)=>{
+    const wins=valid.filter(s=>s.difficulty===level), clean=wins.filter(s=>s.assisted===false);
+    const best=clean.length?formatTime(Math.min(...clean.map(s=>s.seconds))):'—';
+    return `${LABELS[i]}: ${wins.length} solved · best without hints/checks ${best}`;
+  }).join('\n');
+}
+function updateExtras() {
+  document.getElementById('game-label').textContent=gameStarted?`${state.dailyDate?'Daily · '+state.dailyDate:'Practice'} · ${TECHNIQUES[state.rating ?? LEVELS.indexOf(state.difficulty)]}`:'';
+  document.getElementById('hide-notes-btn').textContent=state.hideNotes?'Show candidates':'Hide candidates';
+  document.getElementById('notes-btn').setAttribute('aria-pressed',String(state.notesMode));
+  document.getElementById('notes-setting').value=state.autoNotes?'auto':'manual';
+  for(const id of ['hint-btn','check-btn','solve-btn','notes-setting','notes-btn']) document.getElementById(id).disabled=!gameStarted||state.solved||state.paused;
+  document.getElementById('undo-btn').disabled=!history.length||state.paused||state.solved;
+  document.getElementById('pause-btn').disabled=!gameStarted||state.solved;
+  for(let i=0;i<81;i++) {
+    cellElements[i].classList.toggle('hint-cell',hintCells.has(i));
+    cellElements[i].classList.toggle('hint-target',!!pendingHint&&pendingHint.step.place[0]===i);
+    if(checkedErrors.has(i)&&checkedErrors.get(i)!==board[i]) checkedErrors.delete(i);
+    cellElements[i].classList.toggle('error',checkedErrors.has(i));
+    cellElements[i].setAttribute('aria-label',`Row ${Math.floor(i/9)+1}, column ${i%9+1}, ${board[i]||'empty'}${givens[i]?', given':''}`);
+    cellElements[i].tabIndex=i===(state.selected<0?0:state.selected)?0:-1;
+  }
+  syncPlayUI();
+}
+document.getElementById('hint-btn').addEventListener('click',showHint);
+document.getElementById('apply-hint-btn').addEventListener('click',applyHint);
+document.getElementById('daily-btn').addEventListener('click',()=>openPicker('daily'));
+document.getElementById('cancel-picker').addEventListener('click',resumeGame);
+document.getElementById('close-win').addEventListener('click',()=>{document.getElementById('win-overlay').classList.remove('show');document.getElementById('new-btn').focus();});
+document.getElementById('notes-setting').addEventListener('change',e=>{
+  const auto=e.target.value==='auto';
+  if(gameStarted&&!confirm('Switch candidate mode? This will clear your undo history and '+(auto?'recalculate candidates.':'clear pencil marks for manual entry.'))) {e.target.value=state.autoNotes?'auto':'manual';return;}
+  state.autoNotes=auto;history.length=0;resetHint();
+  if(auto)initNotes();else notes=Array.from({length:81},()=>new Set());
+  render();tell(auto?'Automatic candidates are on.':'Manual candidates are on. Use Pencil mode to add notes.');
 });
 
-document.getElementById('new-btn').addEventListener('click', () => {
-  document.getElementById('picker-overlay').classList.remove('hidden');
-});
+
+// Home, secondary screens, and the compact play UI share the existing game state.
+let screen = 'home';
+let returnScreen = 'home';
+let canSave = true;
+function showScreen(next, focus = true) {
+  screen = next;
+  document.getElementById('picker-overlay').classList.toggle('hidden',next!=='home');
+  for(const name of ['game','settings','stats']) document.getElementById(name+'-screen').hidden=next!==name;
+  if(next!=='game') stopTimer();
+  else if(gameStarted&&!state.solved&&!state.paused) startTimer();
+  if(next==='home') updateHome();
+  if(focus) {
+    const target=next==='home'?(gameStarted?'cancel-picker':null):next==='settings'?'settings-back-btn':next==='stats'?'stats-back-btn':'new-btn';
+    if(target) document.getElementById(target).focus();
+  }
+  window.scrollTo?.(0,0);
+}
+function resumeGame() {
+  if(!gameStarted)return;
+  state.paused=false;
+  document.querySelector('.grid-wrapper').classList.remove('paused');
+  showScreen('game');render();
+}
+function openSecondary(next) {
+  if(screen==='game'||screen==='home')returnScreen=screen;
+  resetHint();showScreen(next);updateExtras();saveGame();
+}
+function backFromSecondary() {showScreen(returnScreen);render();}
+function updateHome() {
+  document.getElementById('resume-card').hidden=!gameStarted;
+  if(gameStarted) {
+    document.getElementById('resume-pepper').dataset.tier=state.difficulty;
+    document.getElementById('resume-level').textContent=LABELS[LEVELS.indexOf(state.difficulty)];
+    document.getElementById('resume-time').textContent=formatTime(state.timerSeconds);
+    document.getElementById('resume-detail').textContent=(state.dailyDate?'Daily · '+state.dailyDate:'Practice')+' · '+TECHNIQUES[state.rating??LEVELS.indexOf(state.difficulty)];
+    document.getElementById('resume-label').textContent=state.solved?'View completed board':'Resume game';
+    document.getElementById('resume-save-status').textContent=canSave?'Saved':'Not saved';
+  }
+  const today=localDate();
+  const completed=LEVELS.filter(level=>stats['daily:'+today+':'+level]).length;
+  const inProgress=gameStarted&&!state.solved&&state.dailyDate===today;
+  document.getElementById('daily-status').textContent=new Date(today+'T12:00:00').toLocaleDateString(undefined,{month:'long',day:'numeric'})+' · '+(completed?completed+' of 6 completed':inProgress?'In progress':'Not played');
+  document.getElementById('home-daily-btn').hidden=pickerMode==='daily';
+  document.getElementById('practice-btn').hidden=pickerMode!=='daily';
+  document.getElementById('picker-mode').textContent=pickerMode==='daily'?today:'NEW GAME';
+  document.querySelectorAll('.pick-btn').forEach(btn=>{
+    const label=LABELS[LEVELS.indexOf(btn.dataset.diff)];
+    btn.setAttribute('aria-label',label+(pickerMode==='daily'&&stats['daily:'+today+':'+btn.dataset.diff]?' · Daily completed':''));
+    btn.querySelector('.pick-arrow').textContent=pickerMode==='daily'&&stats['daily:'+today+':'+btn.dataset.diff]?'✓':'›';
+  });
+}
+function syncPlayUI() {
+  for(const id of ['game-pepper','win-pepper'])document.getElementById(id).dataset.tier=state.difficulty;
+  const pause=document.getElementById('pause-btn');
+  pause.textContent=state.paused?'▶':'⏸';
+  pause.setAttribute('aria-label',state.paused?'Resume game (P)':'Pause game (P)');
+  document.getElementById('hint-card').hidden=!pendingHint;
+  if(pendingHint) {
+    document.getElementById('hint-title').textContent=pendingHint.chain.length===1?pendingHint.step.technique:'Step-by-step hint';
+    document.getElementById('hint-text').textContent=pendingHint.chain.map(s=>pendingHint.chain.length===1?s.text:s.technique+': '+s.text).join('\n\n');
+    document.getElementById('apply-hint-btn').textContent='Place '+pendingHint.step.place[1];
+  }
+  document.getElementById('apply-hint-btn').disabled=state.paused||screen!=='game';
+  document.getElementById('notes-setting').disabled=gameStarted&&state.solved;
+  document.getElementById('solve-btn').disabled=!gameStarted||state.solved;
+}
+document.getElementById('dismiss-hint-btn').addEventListener('click',()=>{resetHint();tell('');render();});
+document.getElementById('settings-btn').addEventListener('click',()=>openSecondary('settings'));
+document.getElementById('home-settings-btn').addEventListener('click',()=>openSecondary('settings'));
+document.getElementById('stats-btn').addEventListener('click',()=>openSecondary('stats'));
+document.getElementById('home-stats-btn').addEventListener('click',()=>openSecondary('stats'));
+document.getElementById('settings-back-btn').addEventListener('click',backFromSecondary);
+document.getElementById('stats-back-btn').addEventListener('click',backFromSecondary);
+document.getElementById('home-daily-btn').addEventListener('click',()=>openPicker('daily'));
+document.getElementById('practice-btn').addEventListener('click',()=>openPicker());
+// Local SVG controls keep offline play independent of an icon CDN.
+const ICON_PATHS={
+  settings:'M4 7h16M4 17h16M8 4v6M16 14v6',
+  play:'m8 5 11 7-11 7Z',
+  erase:'m4 13 9-9 7 7-9 9H7l-3-3Zm5-5 7 7M11 20h9',
+  pencil:'m4 16 12-12 4 4-12 12H4Zm9-9 4 4',
+  undo:'M8 5 3 10l5 5M3 10h11a6 6 0 0 1 0 12',
+  hint:'M9 18h6M9 21h6M8 15c0-2-3-3-3-7a7 7 0 0 1 14 0c0 4-3 5-3 7',
+  home:'m3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9',
+  check:'m4 12 5 5L20 6',
+  calendar:'M4 5h16v16H4ZM4 10h16M8 3v4M16 3v4',
+  trophy:'M8 3h8v7a4 4 0 0 1-8 0ZM8 5H4v3a4 4 0 0 0 4 4M16 5h4v3a4 4 0 0 1-4 4M12 14v6M8 21h8'
+};
+document.querySelectorAll('[data-icon]').forEach(el=>{el.innerHTML='<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="'+ICON_PATHS[el.dataset.icon]+'"/></svg>';});
+
 
 // ─── Init ────────────────────────────────────────────────────────────────────
 buildGrid();
+restoreGame();
+updateStats();
+updateExtras();
+openPicker();
+window.addEventListener('pagehide', saveGame);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) saveGame();
+});
 </script>
 
 <script>
